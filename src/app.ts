@@ -14,6 +14,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api', router);
 
+console.log('브랜치테스트');
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
