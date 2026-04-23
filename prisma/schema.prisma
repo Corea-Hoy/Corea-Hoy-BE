@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUM ====================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DraftStep {
+  select
+  review_ko
+  review_es
+  preview
+}
+
+enum LangStatus {
+  pending
+  done
+}
+
+// ==================== USER ====================
+
+model User {
+  id          String   @id @default(uuid())
+  googleId    String   @unique @map("google_id")
+  email       String   @unique
+  nickname    String
+  avatarEmoji String   @default("🐣") @map("avatar_emoji")
+  avatarColor String   @default("#FDE68A") @map("avatar_color")
+  role        Role     @default(USER)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  comments Comment[]
+  likes    Like[]
+  scraps   Scrap[]
+
+  @@map("users")
+}
+
+// ==================== CATEGORY ====================
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    // "K-POP", "문화", "음식", "경제"
+  slug     String    @unique // "kpop", "culture", "food"
+
+  articles Article[]
+
+  @@map("categories")
+}
+
+// ==================== ARTICLE ====================
+
+model Article {
+  id             String        @id @default(uuid())
+
+  // 한국어 컨텐츠
+  titleKo        String        @map("title_ko")
+  summaryKo      String        @map("summary_ko")
+  bodyKo         String        @map("body_ko")
+  culturalNoteKo String        @map("cultural_note_ko")
+
+  // 스페인어 컨텐츠
+  titleEs        String        @default("") @map("title_es")
+  summaryEs      String        @default("") @map("summary_es")
+  bodyEs         String        @default("") @map("body_es")
+  culturalNoteEs String        @default("") @map("cultural_note_es")
+
+  thumbnailUrl   String?       @map("thumbnail_url")
+  status         ArticleStatus @default(DRAFT)
+  draftStep      DraftStep     @default(select) @map("draft_step")
+  langStatusKo   LangStatus    @default(pending) @map("lang_status_ko")
+  langStatusEs   LangStatus    @default(pending) @map("lang_status_es")
+  viewCount      Int           @default(0) @map("view_count")
+  categoryId     Int           @map("category_id")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  category       Category      @relation(fields: [categoryId], references: [id])
+  sources        ArticleSource[]
+  comments       Comment[]
+  likes          Like[]
+  scraps         Scrap[]
+
+  @@map("articles")
+}
+
+// ==================== ARTICLE SOURCE ====================
+
+model ArticleSource {
+  id        Int     @id @default(autoincrement())
+  articleId String  @map("article_id")
+  title     String
+  url       String
+
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("article_sources")
+}
+
+// ==================== COMMENT ====================
+
+model Comment {
+  id        String    @id @default(uuid())
+  body      String
+  articleId String    @map("article_id")
+  userId    String    @map("user_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+// ==================== LIKE ====================
+
+model Like {
+  userId    String   @map("user_id")
+  articleId String   @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("likes")
+}
+
+// ==================== SCRAP ====================
+
+model Scrap {
+  userId    String   @map("user_id")
+  articleId String   @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("scraps")
+}
