@@ -78,10 +78,12 @@ export const getArticleById = async (id: string) => {
 
   if (!article || article.status !== 'PUBLISHED') return null;
 
-  await prisma.article.update({
+  return prisma.article.update({
     where: { id },
     data: { viewCount: { increment: 1 } },
+    include: {
+      category: { select: { id: true, name: true } },
+      _count: { select: { likes: true, comments: true } },
+    },
   });
-
-  return article;
 };
