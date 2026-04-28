@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { getCategories } from '../controllers/category.controller';
 
 const router = Router();
 
@@ -19,8 +20,6 @@ const router = Router();
  *       200:
  *         description: 성공
  */
-router.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'get categories' });
-});
+router.get('/', getCategories);
 
 export default router;
