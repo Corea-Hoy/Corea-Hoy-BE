@@ -1,4 +1,6 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { getMe } from '../controllers/auth.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -6,35 +8,23 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Auth
- *   description: 인증
+ *   description: 인증 및 유저 정보
  */
 
 /**
  * @swagger
- * /api/auth/google:
- *   post:
- *     summary: Google OAuth 로그인 후 유저 등록 및 JWT 발급
+ * /api/auth/me:
+ *   get:
+ *     summary: 내 정보 조회 및 최초 로그인 시 유저 자동 생성 (JIT Provisioning)
  *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: JWT 발급 성공
+ *         description: 유저 정보 조회 및 DB 동기화 성공
+ *       401:
+ *         description: 인증 토큰이 없거나 유효하지 않음
  */
-router.post('/google', (req: Request, res: Response) => {
-  res.json({ message: 'google auth' });
-});
-
-/**
- * @swagger
- * /api/auth/refresh:
- *   post:
- *     summary: Access Token 만료 시 갱신
- *     tags: [Auth]
- *     responses:
- *       200:
- *         description: 토큰 갱신 성공
- */
-router.post('/refresh', (req: Request, res: Response) => {
-  res.json({ message: 'refresh token' });
-});
+router.get('/me', authMiddleware, getMe);
 
 export default router;

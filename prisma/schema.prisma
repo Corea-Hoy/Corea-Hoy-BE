@@ -1,91 +1,111 @@
-// Prisma Schema for Corea Hoy (MVP v1.0)
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // Supabase 사용 시 postgresql 설정
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// 유저 정보 (구글 인증 기반)
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String?
-  image         String?
-  role          Role      @default(USER) // USER, ADMIN 구분
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // 관계 설정
-  articles      Article[] // 관리자일 경우 작성한 기사들
-  comments      Comment[]
-  likes         Like[]
+model article_sources {
+  id         Int      @id @default(autoincrement())
+  article_id String   @db.Uuid
+  title      String?
+  url        String
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-// 뉴스 기사 (핵심 데이터)
-model Article {
-  id                String        @id @default(uuid())
-  title             String        // 스페인어 번역 제목
-  content           String        // 스페인어 번역 본문 (요약 포함)
-  originalUrl       String        // 네이버 뉴스 등 원문 링크
-  imageUrl          String?       // 기사 썸네일
-  status            ArticleStatus @default(DRAFT) // DRAFT, PUBLISHED
-  viewCount         Int           @default(0)
-  
-  category          Category      @relation(fields: [categoryId], references: [id])
-  categoryId        String
-
-  author            User?         @relation(fields: [authorId], references: [id])
-  authorId          String?
-
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  // 관계 설정
-  comments          Comment[]
-  likes             Like[]
+model articles {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title_ko         String
+  body_ko          String
+  cultural_note_ko String?
+  title_es         String?
+  body_es          String?
+  cultural_note_es String?
+  thumbnail_url    String?
+  status           ArticleStatus     @default(DRAFT)
+  draft_step       DraftStep         @default(select)
+  lang_status_ko   LangStatus        @default(pending)
+  lang_status_es   LangStatus        @default(pending)
+  view_count       Int               @default(0)
+  category_id      Int
+  published_at     DateTime?         @db.Timestamptz(6)
+  created_at       DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime          @default(now()) @db.Timestamptz(6)
+  article_sources  article_sources[]
+  categories       categories        @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments         comments[]
+  likes            likes[]
+  scraps           scraps[]
 }
 
-// 카테고리 (K-POP, 드라마 등)
-model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique // 예: "K-POP", "Drama", "Life"
-  articles  Article[]
+model categories {
+  id       Int        @id @default(autoincrement())
+  name     String
+  slug     String     @unique
+  articles articles[]
 }
 
-// 댓글
-model Comment {
-  id        String   @id @default(uuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId String
+model comments {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  body       String
+  article_id String    @db.Uuid
+  user_id    String    @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  articles   articles  @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-// 좋아요 (마이페이지 저장 기능 겸용)
-model Like {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId String
-
-  // 한 유저가 한 기사에 좋아요를 한 번만 누를 수 있도록 설정
-  @@unique([userId, articleId])
+model feedbacks {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category       FeedbackCategory
+  other_category String?
+  body           String
+  email          String?
+  submitted_by   String
+  user_id        String?          @db.Uuid
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  users          users?           @relation(fields: [user_id], references: [id], onUpdate: NoAction)
 }
 
-// Enum 타입 정의
+model likes {
+  user_id    String   @db.Uuid
+  article_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, article_id])
+}
+
+model scraps {
+  user_id    String   @db.Uuid
+  article_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, article_id])
+}
+
+model users {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  google_id    String      @unique
+  email        String      @unique
+  nickname     String?
+  avatar_emoji String?
+  avatar_color String?
+  role         UserRole    @default(USER)
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  comments     comments[]
+  feedbacks    feedbacks[]
+  likes        likes[]
+  scraps       scraps[]
+}
+
 enum Role {
   USER
   ADMIN
@@ -94,4 +114,31 @@ enum Role {
 enum ArticleStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
+}
+
+enum DraftStep {
+  select
+  review_ko @map("review-ko")
+  review_es @map("review-es")
+  preview
+}
+
+enum FeedbackCategory {
+  ui
+  content
+  translation
+  feature
+  bug
+  other
+}
+
+enum LangStatus {
+  pending
+  done
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
