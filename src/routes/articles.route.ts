@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { getArticlesController, getArticleController } from '../controllers/article.controller';
 
 const router = Router();
 
@@ -44,9 +45,7 @@ const router = Router();
  *       200:
  *         description: 성공
  */
-router.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'get articles' });
-});
+router.get('/', getArticlesController);
 
 /**
  * @swagger
@@ -66,9 +65,7 @@ router.get('/', (req: Request, res: Response) => {
  *       404:
  *         description: 컨텐츠 없음
  */
-router.get('/:id', (req: Request, res: Response) => {
-  res.json({ message: 'get article' });
-});
+router.get('/:id', getArticleController);
 
 /**
  * @swagger
