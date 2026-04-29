@@ -8,12 +8,14 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
   try {
     const { category, otherCategory, body, email } = req.body ?? {};
 
-    if (!category || !body) {
-      res.status(400).json({ success: false, message: 'category와 body는 필수입니다.' });
+    // 타입 + 필수 값 검증
+    if (typeof category !== 'string' || typeof body !== 'string' || !category || !body.trim()) {
+      res.status(400).json({ success: false, message: 'category와 body는 필수 문자열입니다.' });
       return;
     }
 
-    if (!VALID_CATEGORIES.includes(category)) {
+    // category enum 검증
+    if (!VALID_CATEGORIES.includes(category as FeedbackCategory)) {
       res.status(400).json({
         success: false,
         message: `category는 ${VALID_CATEGORIES.join(', ')} 중 하나여야 합니다.`,
@@ -21,7 +23,8 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    if (category === 'other' && !otherCategory) {
+    // category=other일 때 otherCategory 필수
+    if (category === 'other' && (typeof otherCategory !== 'string' || !otherCategory.trim())) {
       res
         .status(400)
         .json({ success: false, message: 'other 카테고리 선택 시 otherCategory가 필요합니다.' });
@@ -32,7 +35,14 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
     const submittedBy = 'Guest';
     const userId = undefined;
 
-    await createFeedback({ category, otherCategory, body, email, submittedBy, userId });
+    await createFeedback({
+      category: category as FeedbackCategory,
+      otherCategory,
+      body,
+      email,
+      submittedBy,
+      userId,
+    });
 
     res.status(201).json({ success: true, message: '피드백이 접수되었습니다.' });
   } catch (err) {
