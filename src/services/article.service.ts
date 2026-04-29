@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 
 interface GetArticlesParams {
@@ -17,15 +18,17 @@ export const getArticles = async ({
 }: GetArticlesParams) => {
   const skip = (page - 1) * limit;
 
-  const where = {
+  const where: Prisma.ArticleWhereInput = {
     status: 'PUBLISHED' as const,
     ...(category && {
-      category: { name: { equals: category, mode: 'insensitive' as const } },
+      category: { slug: { equals: category, mode: 'insensitive' as const } },
     }),
     ...(q && {
       OR: [
-        { title: { contains: q, mode: 'insensitive' as const } },
-        { content: { contains: q, mode: 'insensitive' as const } },
+        { titleKo: { contains: q, mode: 'insensitive' as const } },
+        { bodyKo: { contains: q, mode: 'insensitive' as const } },
+        { titleEs: { contains: q, mode: 'insensitive' as const } },
+        { bodyEs: { contains: q, mode: 'insensitive' as const } },
       ],
     }),
   };
@@ -45,11 +48,13 @@ export const getArticles = async ({
       take: limit,
       select: {
         id: true,
-        title: true,
-        imageUrl: true,
+        titleKo: true,
+        titleEs: true,
+        thumbnailUrl: true,
         viewCount: true,
+        publishedAt: true,
         createdAt: true,
-        category: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, slug: true } },
         _count: { select: { likes: true, comments: true } },
       },
     }),
@@ -71,7 +76,8 @@ export const getArticleById = async (id: string) => {
   const article = await prisma.article.findUnique({
     where: { id },
     include: {
-      category: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, slug: true } },
+      sources: true,
       _count: { select: { likes: true, comments: true } },
     },
   });
@@ -82,7 +88,8 @@ export const getArticleById = async (id: string) => {
     where: { id },
     data: { viewCount: { increment: 1 } },
     include: {
-      category: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, slug: true } },
+      sources: true,
       _count: { select: { likes: true, comments: true } },
     },
   });

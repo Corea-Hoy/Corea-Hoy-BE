@@ -5,88 +5,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Supabase 사용 시 postgresql 설정
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// 유저 정보 (구글 인증 기반)
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String?
-  image         String?
-  role          Role      @default(USER) // USER, ADMIN 구분
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+// ============================================
+// ENUM
+// ============================================
 
-  // 관계 설정
-  articles      Article[] // 관리자일 경우 작성한 기사들
-  comments      Comment[]
-  likes         Like[]
-}
-
-// 뉴스 기사 (핵심 데이터)
-model Article {
-  id                String        @id @default(uuid())
-  title             String        // 스페인어 번역 제목
-  content           String        // 스페인어 번역 본문 (요약 포함)
-  originalUrl       String        // 네이버 뉴스 등 원문 링크
-  imageUrl          String?       // 기사 썸네일
-  status            ArticleStatus @default(DRAFT) // DRAFT, PUBLISHED
-  viewCount         Int           @default(0)
-  
-  category          Category      @relation(fields: [categoryId], references: [id])
-  categoryId        String
-
-  author            User?         @relation(fields: [authorId], references: [id])
-  authorId          String?
-
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  // 관계 설정
-  comments          Comment[]
-  likes             Like[]
-}
-
-// 카테고리 (K-POP, 드라마 등)
-model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique // 예: "K-POP", "Drama", "Life"
-  articles  Article[]
-}
-
-// 댓글
-model Comment {
-  id        String   @id @default(uuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId String
-}
-
-// 좋아요 (마이페이지 저장 기능 겸용)
-model Like {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId String
-
-  // 한 유저가 한 기사에 좋아요를 한 번만 누를 수 있도록 설정
-  @@unique([userId, articleId])
-}
-
-// Enum 타입 정의
-enum Role {
+enum UserRole {
   USER
   ADMIN
 }
@@ -94,4 +21,178 @@ enum Role {
 enum ArticleStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
+}
+
+enum DraftStep {
+  select
+  review_ko  @map("review-ko")
+  review_es  @map("review-es")
+  preview
+}
+
+enum LangStatus {
+  pending
+  done
+}
+
+enum FeedbackCategory {
+  ui
+  content
+  translation
+  feature
+  bug
+  other
+}
+
+// ============================================
+// USER
+// ============================================
+
+model User {
+  id           String   @id @default(uuid())
+  googleId     String   @unique @map("google_id")
+  email        String   @unique
+  nickname     String?
+  avatarEmoji  String?  @map("avatar_emoji")
+  avatarColor  String?  @map("avatar_color")
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  comments  Comment[]
+  likes     Like[]
+  scraps    Scrap[]
+  feedbacks Feedback[]
+
+  @@map("users")
+}
+
+// ============================================
+// CATEGORY
+// ============================================
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  articles Article[]
+
+  @@map("categories")
+}
+
+// ============================================
+// ARTICLE
+// ============================================
+
+model Article {
+  id              String        @id @default(uuid())
+  titleKo         String        @map("title_ko")
+  bodyKo          String        @map("body_ko")
+  culturalNoteKo  String?       @map("cultural_note_ko")
+  titleEs         String?       @map("title_es")
+  bodyEs          String?       @map("body_es")
+  culturalNoteEs  String?       @map("cultural_note_es")
+  thumbnailUrl    String?       @map("thumbnail_url")
+  status          ArticleStatus @default(DRAFT)
+  draftStep       DraftStep     @default(select) @map("draft_step")
+  langStatusKo    LangStatus    @default(pending) @map("lang_status_ko")
+  langStatusEs    LangStatus    @default(pending) @map("lang_status_es")
+  viewCount       Int           @default(0) @map("view_count")
+  categoryId      Int           @map("category_id")
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  category  Category        @relation(fields: [categoryId], references: [id])
+  sources   ArticleSource[]
+  comments  Comment[]
+  likes     Like[]
+  scraps    Scrap[]
+
+  @@map("articles")
+}
+
+// ============================================
+// ARTICLE SOURCE
+// ============================================
+
+model ArticleSource {
+  id        Int     @id @default(autoincrement())
+  articleId String  @map("article_id")
+  title     String?
+  url       String
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("article_sources")
+}
+
+// ============================================
+// COMMENT
+// ============================================
+
+model Comment {
+  id        String    @id @default(uuid())
+  body      String
+  articleId String    @map("article_id")
+  userId    String    @map("user_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+// ============================================
+// LIKE
+// ============================================
+
+model Like {
+  userId    String   @map("user_id")
+  articleId String   @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("likes")
+}
+
+// ============================================
+// SCRAP
+// ============================================
+
+model Scrap {
+  userId    String   @map("user_id")
+  articleId String   @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("scraps")
+}
+
+// ============================================
+// FEEDBACK
+// ============================================
+
+model Feedback {
+  id            String           @id @default(uuid())
+  category      FeedbackCategory
+  otherCategory String?          @map("other_category")
+  body          String
+  email         String?
+  submittedBy   String           @map("submitted_by")
+  userId        String?          @map("user_id")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("feedbacks")
 }
