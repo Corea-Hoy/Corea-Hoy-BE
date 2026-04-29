@@ -2,13 +2,18 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface JwtPayload {
-  userId: string;
+  sub?: string;
+  userId?: string;
   email: string;
-  role: 'USER' | 'ADMIN';
+  role?: 'USER' | 'ADMIN';
+  name?: string;
+  picture?: string;
+  image?: string;
 }
 
 // Request 타입에 user 필드 추가 (TypeScript 타입 확장)
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: JwtPayload;
@@ -28,7 +33,9 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    // NextAuth 비밀키를 우선 사용하고, 없으면 기본 JWT_SECRET 사용
+    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET!;
+    const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded;
     next();
   } catch {

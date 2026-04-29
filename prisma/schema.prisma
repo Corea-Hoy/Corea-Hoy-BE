@@ -26,8 +26,8 @@ enum ArticleStatus {
 
 enum DraftStep {
   select
-  review_ko  @map("review-ko")
-  review_es  @map("review-es")
+  review_ko @map("review-ko")
+  review_es @map("review-es")
   preview
 }
 
@@ -50,19 +50,19 @@ enum FeedbackCategory {
 // ============================================
 
 model User {
-  id           String   @id @default(uuid())
-  googleId     String   @unique @map("google_id")
-  email        String   @unique
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  googleId     String      @unique @map("google_id")
+  email        String      @unique
   nickname     String?
-  avatarEmoji  String?  @map("avatar_emoji")
-  avatarColor  String?  @map("avatar_color")
-  role         UserRole @default(USER)
-  createdAt    DateTime @default(now()) @map("created_at")
+  avatarEmoji  String?     @map("avatar_emoji")
+  avatarColor  String?     @map("avatar_color")
+  role         UserRole    @default(USER)
+  createdAt    DateTime    @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  comments  Comment[]
-  likes     Like[]
-  scraps    Scrap[]
-  feedbacks Feedback[]
+  comments     Comment[]
+  likes        Like[]
+  scraps       Scrap[]
+  feedbacks    Feedback[]
 
   @@map("users")
 }
@@ -85,7 +85,7 @@ model Category {
 // ============================================
 
 model Article {
-  id              String        @id @default(uuid())
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   titleKo         String        @map("title_ko")
   bodyKo          String        @map("body_ko")
   culturalNoteKo  String?       @map("cultural_note_ko")
@@ -99,15 +99,15 @@ model Article {
   langStatusEs    LangStatus    @default(pending) @map("lang_status_es")
   viewCount       Int           @default(0) @map("view_count")
   categoryId      Int           @map("category_id")
-  publishedAt     DateTime?     @map("published_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  publishedAt     DateTime?     @db.Timestamptz(6) @map("published_at")
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime      @default(now()) @db.Timestamptz(6) @map("updated_at")
 
-  category  Category        @relation(fields: [categoryId], references: [id])
-  sources   ArticleSource[]
-  comments  Comment[]
-  likes     Like[]
-  scraps    Scrap[]
+  category        Category      @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sources         ArticleSource[]
+  comments        Comment[]
+  likes           Like[]
+  scraps          Scrap[]
 
   @@map("articles")
 }
@@ -118,11 +118,11 @@ model Article {
 
 model ArticleSource {
   id        Int     @id @default(autoincrement())
-  articleId String  @map("article_id")
+  articleId String  @db.Uuid @map("article_id")
   title     String?
   url       String
 
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("article_sources")
 }
@@ -132,16 +132,16 @@ model ArticleSource {
 // ============================================
 
 model Comment {
-  id        String    @id @default(uuid())
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   body      String
-  articleId String    @map("article_id")
-  userId    String    @map("user_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  articleId String    @db.Uuid @map("article_id")
+  userId    String    @db.Uuid @map("user_id")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime  @default(now()) @db.Timestamptz(6) @map("updated_at")
+  deletedAt DateTime? @db.Timestamptz(6) @map("deleted_at")
 
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("comments")
 }
@@ -151,12 +151,12 @@ model Comment {
 // ============================================
 
 model Like {
-  userId    String   @map("user_id")
-  articleId String   @map("article_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  userId    String   @db.Uuid @map("user_id")
+  articleId String   @db.Uuid @map("article_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([userId, articleId])
   @@map("likes")
@@ -167,12 +167,12 @@ model Like {
 // ============================================
 
 model Scrap {
-  userId    String   @map("user_id")
-  articleId String   @map("article_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  userId    String   @db.Uuid @map("user_id")
+  articleId String   @db.Uuid @map("article_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([userId, articleId])
   @@map("scraps")
@@ -183,16 +183,16 @@ model Scrap {
 // ============================================
 
 model Feedback {
-  id            String           @id @default(uuid())
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   category      FeedbackCategory
   otherCategory String?          @map("other_category")
   body          String
   email         String?
   submittedBy   String           @map("submitted_by")
-  userId        String?          @map("user_id")
-  createdAt     DateTime         @default(now()) @map("created_at")
+  userId        String?          @db.Uuid @map("user_id")
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user          User?            @relation(fields: [userId], references: [id], onUpdate: NoAction)
 
   @@map("feedbacks")
 }
