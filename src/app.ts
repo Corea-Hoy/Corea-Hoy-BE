@@ -10,11 +10,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      defaultModelsExpandDepth: -1,
+    },
+  }),
+);
 
 app.use('/api', router);
-
-console.log('브랜치테스트');
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
