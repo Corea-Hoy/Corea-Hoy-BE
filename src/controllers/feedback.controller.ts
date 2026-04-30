@@ -14,6 +14,12 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
+    // 글자수 제한
+    if (body.length > 1000) {
+      res.status(400).json({ success: false, message: '내용은 1000자 이하로 입력해주세요.' });
+      return;
+    }
+
     // category enum 검증
     if (!VALID_CATEGORIES.includes(category as FeedbackCategory)) {
       res.status(400).json({
