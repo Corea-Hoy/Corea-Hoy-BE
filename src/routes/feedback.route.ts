@@ -7,14 +7,14 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Feedback
- *   description: 피드백 🥒
+ *   description: 피드백
  */
 
 /**
  * @swagger
  * /api/feedback:
  *   post:
- *     summary: 피드백 제출 (비로그인 가능)
+ *     summary: 피드백 제출 (비로그인 가능)🥒
  *     tags: [Feedback]
  *     requestBody:
  *       required: true
@@ -33,7 +33,8 @@ const router = Router();
  *                 description: category가 other일 때 필수
  *               body:
  *                 type: string
- *                 description: 상세 내용 (필수)
+ *                 maxLength: 1000
+ *                 description: 상세 내용 (필수, 최대 1000자)
  *               email:
  *                 type: string
  *                 description: 답변 받을 이메일 (선택)

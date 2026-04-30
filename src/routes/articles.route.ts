@@ -7,14 +7,14 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Articles
- *   description: 뉴스 컨텐츠 🥒
+ *   description: 뉴스 컨텐츠
  */
 
 /**
  * @swagger
  * /api/articles:
  *   get:
- *     summary: 뉴스 피드 조회 (카테고리, 검색, 정렬)
+ *     summary: 뉴스 피드 조회 (카테고리, 검색, 정렬)🥒
  *     tags: [Articles]
  *     parameters:
  *       - in: query
@@ -51,7 +51,7 @@ router.get('/', getArticlesController);
  * @swagger
  * /api/articles/{id}:
  *   get:
- *     summary: 뉴스 상세 조회 (조회수 +1)
+ *     summary: 뉴스 상세 조회 (조회수 +1)🥒
  *     tags: [Articles]
  *     parameters:
  *       - in: path
