@@ -1,26 +1,81 @@
 import { Request, Response, NextFunction } from 'express';
+import { OAuth2Client } from 'google-auth-library';
+import jwt from 'jsonwebtoken';
 import * as authService from '../services/auth.service';
 
-/**
- * 내 정보 조회 및 자동 회원가입 API
- * 프론트엔드(NextAuth)가 보낸 JWT를 기반으로 DB 유저를 반환합니다.
- */
-export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    // authMiddleware를 통과했다면 req.user에 토큰 해독 정보가 들어있습니다.
-    const decodedUser = req.user;
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
-    if (!decodedUser || !decodedUser.email) {
-      res.status(400).json({ message: '토큰에서 이메일 정보를 찾을 수 없습니다.' });
+/**
+ * 구글 ID 토큰 검증 및 로그인/회원가입
+ * FE에서 직접 구글로부터 받은 id_token을 백엔드로 보냅니다.
+ */
+export const googleLogin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id_token } = req.body;
+
+    if (!id_token) {
+      res.status(400).json({ message: 'id_token이 필요합니다.' });
       return;
     }
 
-    // Service 호출하여 DB 확인 및 생성
+    // 1. 구글 ID 토큰 검증
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      res.status(401).json({ message: '유효하지 않은 구글 토큰입니다.' });
+      return;
+    }
+
+    // 2. 유저 조회 또는 생성 (JIT)
+    const user = await authService.findOrCreateUser({
+      email: payload.email,
+      sub: payload.sub,
+      name: payload.name,
+      image: payload.picture,
+    });
+
+    // 3. 서비스 자체 JWT 발급
+    const accessToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' } // 예: 7일간 유효
+    );
+
+    res.status(200).json({
+      message: '로그인 성공',
+      user,
+      accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 내 정보 조회 API
+ * 자체 발급한 JWT를 통해 유저 정보를 반환합니다.
+ */
+export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const decodedUser = req.user;
+
+    if (!decodedUser || !decodedUser.email) {
+      res.status(401).json({ message: '인증 정보가 없습니다.' });
+      return;
+    }
+
+    // DB에서 최신 정보 조회
     const user = await authService.findOrCreateUser({
       email: decodedUser.email,
-      sub: decodedUser.sub,
-      name: decodedUser.name || decodedUser.email.split('@')[0], // 이름이 없으면 이메일 앞자리 사용
-      image: decodedUser.picture || decodedUser.image, // 구글은 picture, NextAuth는 image로 줄 수 있음
     });
 
     res.status(200).json({
@@ -28,6 +83,6 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
       user,
     });
   } catch (error) {
-    next(error); // 에러 핸들러로 전달
+    next(error);
   }
 };

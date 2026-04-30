@@ -2,13 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface JwtPayload {
-  sub?: string;
-  userId?: string;
+  userId: string;
   email: string;
-  role?: 'USER' | 'ADMIN';
-  name?: string;
-  picture?: string;
-  image?: string;
+  role: 'USER' | 'ADMIN';
 }
 
 // Request 타입에 user 필드 추가 (TypeScript 타입 확장)
@@ -33,12 +29,11 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const token = authHeader.split(' ')[1];
 
   try {
-    // NextAuth 비밀키를 우선 사용하고, 없으면 기본 JWT_SECRET 사용
-    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET!;
+    const secret = process.env.JWT_SECRET || 'fallback-secret';
     const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded;
     next();
-  } catch {
+  } catch (error) {
     res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
   }
 }
