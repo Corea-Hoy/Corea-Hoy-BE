@@ -15,7 +15,7 @@ const router = Router();
  * @swagger
  * /api/auth/me:
  *   get:
- *     summary: 내 정보 조회 및 최초 로그인 시 유저 자동 생성 (JIT Provisioning)
+ *     summary: 내 정보 조회 및 최초 로그인 시 유저 자동 생성 (JIT Provisioning)🥒
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
