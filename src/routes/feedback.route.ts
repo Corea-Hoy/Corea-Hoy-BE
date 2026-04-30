@@ -7,7 +7,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Feedback
- *   description: 피드백
+ *   description: 피드백 🥒
  */
 
 /**

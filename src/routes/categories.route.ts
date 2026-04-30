@@ -7,7 +7,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Categories
- *   description: 카테고리
+ *   description: 카테고리 🥒
  */
 
 /**
