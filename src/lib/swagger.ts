@@ -14,7 +14,7 @@ const options: swaggerJsdoc.Options = {
         description: '운영 서버 (Render)',
       },
       {
-        url: 'http://localhost:1234',
+        url: `http://localhost:${process.env.PORT || 4000}`,
         description: '개발 서버',
       },
     ],
