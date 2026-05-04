@@ -386,6 +386,11 @@ export const createDraftArticle = async (data: {
   langStatusKo?: LangStatus;
   langStatusEs?: LangStatus;
 }) => {
+  const existingSource = await prisma.articleSource.findFirst({
+    where: { url: data.sourceUrl },
+  });
+  if (existingSource) return null;
+
   return prisma.article.create({
     data: {
       titleKo: data.titleKo,
