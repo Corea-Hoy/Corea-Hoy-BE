@@ -18,14 +18,14 @@ router.use(authMiddleware, adminMiddleware);
  * @swagger
  * tags:
  *   name: Admin
- *   description: 관리자 파이프라인 🥒
+ *   description: 관리자 파이프라인
  */
 
 /**
  * @swagger
  * /api/admin/pipeline/search:
  *   post:
- *     summary: 뉴스 원문 수집 (RSS)
+ *     summary: 뉴스 원문 수집 (RSS)🥒
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -43,7 +43,7 @@ router.post('/pipeline/search', searchNews);
  * @swagger
  * /api/admin/pipeline/generate:
  *   post:
- *     summary: "[AI] 한국어 기사 생성 또는 스페인어 번역"
+ *     summary: "[AI] 한국어 기사 생성 또는 스페인어 번역"🥒
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -81,7 +81,7 @@ router.post('/pipeline/generate', generateContent);
  * @swagger
  * /api/admin/articles:
  *   get:
- *     summary: 전체 기사 관리 목록 조회 (상태별 필터)
+ *     summary: 전체 기사 관리 목록 조회 (상태별 필터)🥒
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -155,7 +155,7 @@ router.post('/articles', createDraftArticle);
  * @swagger
  * /api/admin/articles/{id}:
  *   put:
- *     summary: 기사 내용 수동 수정
+ *     summary: 기사 내용 수동 수정🥒
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -214,7 +214,7 @@ router.delete('/articles/:id', deleteArticle);
  * @swagger
  * /api/admin/articles/{id}/publish:
  *   patch:
- *     summary: 기사 발행 (PUBLISHED 상태로 변경)
+ *     summary: 기사 발행 (PUBLISHED 상태로 변경)🥒
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
