@@ -126,6 +126,7 @@ const fetchNaverNews = async () => {
           'X-Naver-Client-Secret': clientSecret,
         },
       });
+      if (!res.ok) return { slug, category, items: [] };
       const data = (await res.json()) as NaverNewsResponse;
       return { slug, category, items: data.items ?? [] };
     }),

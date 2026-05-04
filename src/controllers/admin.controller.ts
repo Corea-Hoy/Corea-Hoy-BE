@@ -9,6 +9,8 @@ const draftStepMap: Record<string, DraftStep> = {
   preview: DraftStep.preview,
 };
 
+const validLangStatuses = Object.values(LangStatus);
+
 // ============================================
 // 파이프라인 - 뉴스 수집
 // ============================================
@@ -70,12 +72,10 @@ export const getAdminArticles = async (req: Request, res: Response, next: NextFu
 
     const validStatuses = Object.values(ArticleStatus);
     if (status && !validStatuses.includes(status as ArticleStatus)) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: `status는 ${validStatuses.join(', ')} 중 하나여야 합니다.`,
-        });
+      res.status(400).json({
+        success: false,
+        message: `status는 ${validStatuses.join(', ')} 중 하나여야 합니다.`,
+      });
       return;
     }
 
@@ -115,6 +115,26 @@ export const createDraftArticle = async (req: Request, res: Response, next: Next
       return;
     }
 
+    if (langStatusKo && !validLangStatuses.includes(langStatusKo as LangStatus)) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: `langStatusKo는 ${validLangStatuses.join(', ')} 중 하나여야 합니다.`,
+        });
+      return;
+    }
+
+    if (langStatusEs && !validLangStatuses.includes(langStatusEs as LangStatus)) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: `langStatusEs는 ${validLangStatuses.join(', ')} 중 하나여야 합니다.`,
+        });
+      return;
+    }
+
     const article = await adminService.createDraftArticle({
       titleKo,
       bodyKo,
@@ -142,6 +162,24 @@ export const updateArticle = async (req: Request, res: Response, next: NextFunct
     const body = { ...(req.body ?? {}) };
     if (body.draftStep && draftStepMap[body.draftStep]) {
       body.draftStep = draftStepMap[body.draftStep];
+    }
+    if (body.langStatusKo && !validLangStatuses.includes(body.langStatusKo as LangStatus)) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: `langStatusKo는 ${validLangStatuses.join(', ')} 중 하나여야 합니다.`,
+        });
+      return;
+    }
+    if (body.langStatusEs && !validLangStatuses.includes(body.langStatusEs as LangStatus)) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: `langStatusEs는 ${validLangStatuses.join(', ')} 중 하나여야 합니다.`,
+        });
+      return;
     }
     const article = await adminService.updateArticle(req.params.id as string, body);
 
