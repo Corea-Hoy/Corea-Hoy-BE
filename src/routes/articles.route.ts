@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getArticlesController, getArticleController } from '../controllers/article.controller';
+import { getComments, createComment } from '../controllers/comment.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -119,7 +121,7 @@ router.post('/:id/scrap', (req: Request, res: Response) => {
  * @swagger
  * /api/articles/{id}/comments:
  *   get:
- *     summary: 특정 기사의 댓글 리스트 조회
+ *     summary: 특정 기사의 댓글 리스트 조회 🥒
  *     tags: [Articles]
  *     parameters:
  *       - in: path
@@ -131,7 +133,7 @@ router.post('/:id/scrap', (req: Request, res: Response) => {
  *       200:
  *         description: 성공
  *   post:
- *     summary: 댓글 작성
+ *     summary: 댓글 작성 🥒
  *     tags: [Articles]
  *     security:
  *       - bearerAuth: []
@@ -156,11 +158,7 @@ router.post('/:id/scrap', (req: Request, res: Response) => {
  *       401:
  *         description: 인증 필요
  */
-router.get('/:id/comments', (req: Request, res: Response) => {
-  res.json({ message: 'get comments' });
-});
-router.post('/:id/comments', (req: Request, res: Response) => {
-  res.json({ message: 'create comment' });
-});
+router.get('/:id/comments', getComments);
+router.post('/:id/comments', authMiddleware, createComment);
 
 export default router;
