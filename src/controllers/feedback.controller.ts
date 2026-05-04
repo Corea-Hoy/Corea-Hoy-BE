@@ -15,7 +15,7 @@ export const submitFeedback = async (req: Request, res: Response, next: NextFunc
     }
 
     // 글자수 제한
-    if (body.length < 10) {
+    if (body.trim().length < 10) {
       res.status(400).json({ success: false, message: '내용은 10자 이상 입력해주세요.' });
       return;
     }
