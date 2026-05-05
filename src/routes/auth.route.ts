@@ -15,7 +15,7 @@ const router = Router();
  * @swagger
  * /api/auth/google:
  *   post:
- *     summary: 구글 ID 토큰으로 로그인/회원가입
+ *     summary: 구글 ID 토큰으로 로그인/회원가입 🥒
  *     tags: [Auth]
  *     requestBody:
  *       required: true
