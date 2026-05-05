@@ -1,4 +1,6 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { updateComment, deleteComment } from '../controllers/comment.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -13,7 +15,7 @@ const router = Router();
  * @swagger
  * /api/comments/{id}:
  *   put:
- *     summary: 댓글 수정 (본인만)
+ *     summary: 댓글 수정 (본인만) 🥒
  *     tags: [Comments]
  *     security:
  *       - bearerAuth: []
@@ -40,7 +42,7 @@ const router = Router();
  *       403:
  *         description: 권한 없음
  *   delete:
- *     summary: 댓글 삭제 (본인만)
+ *     summary: 댓글 삭제 (본인만) 🥒
  *     tags: [Comments]
  *     security:
  *       - bearerAuth: []
@@ -58,12 +60,7 @@ const router = Router();
  *       403:
  *         description: 권한 없음
  */
-router.put('/:id', (req: Request, res: Response) => {
-  res.json({ message: 'update comment' });
-});
-
-router.delete('/:id', (req: Request, res: Response) => {
-  res.json({ message: 'delete comment' });
-});
+router.put('/:id', authMiddleware, updateComment);
+router.delete('/:id', authMiddleware, deleteComment);
 
 export default router;
