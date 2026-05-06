@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { getArticlesController, getArticleController } from '../controllers/article.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
 import { toggleLike } from '../controllers/like.controller';
