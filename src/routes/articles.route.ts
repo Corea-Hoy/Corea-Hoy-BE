@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getArticlesController, getArticleController } from '../controllers/article.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
+import { toggleLike } from '../controllers/like.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -73,7 +74,7 @@ router.get('/:id', getArticleController);
  * @swagger
  * /api/articles/{id}/like:
  *   post:
- *     summary: 좋아요 토글 (생성/삭제)
+ *     summary: 좋아요 토글 (생성/삭제)🥒
  *     tags: [Articles]
  *     security:
  *       - bearerAuth: []
@@ -89,33 +90,7 @@ router.get('/:id', getArticleController);
  *       401:
  *         description: 인증 필요
  */
-router.post('/:id/like', (req: Request, res: Response) => {
-  res.json({ message: 'toggle like' });
-});
-
-/**
- * @swagger
- * /api/articles/{id}/scrap:
- *   post:
- *     summary: 스크랩 토글 (생성/삭제)
- *     tags: [Articles]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: 성공
- *       401:
- *         description: 인증 필요
- */
-router.post('/:id/scrap', (req: Request, res: Response) => {
-  res.json({ message: 'toggle scrap' });
-});
+router.post('/:id/like', authMiddleware, toggleLike);
 
 /**
  * @swagger
