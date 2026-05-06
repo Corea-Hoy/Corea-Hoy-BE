@@ -72,7 +72,7 @@ export const getArticles = async ({
   };
 };
 
-export const getArticleById = async (id: string) => {
+export const getArticleById = async (id: string, viewerKey?: string) => {
   const article = await prisma.article.findUnique({
     where: { id },
     include: {
@@ -84,6 +84,19 @@ export const getArticleById = async (id: string) => {
 
   if (!article || article.status !== 'PUBLISHED') return null;
 
+  if (viewerKey) {
+    try {
+      // 이미 조회 기록이 있으면 P2002(unique 충돌) → 카운트 생략
+      await prisma.articleView.create({ data: { articleId: id, viewerKey } });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        return article;
+      }
+      console.error('[viewCount] articleView 생성 실패:', e);
+    }
+  }
+
+  // 첫 조회이거나 viewerKey가 없는 경우 카운트 증가
   return prisma.article.update({
     where: { id },
     data: { viewCount: { increment: 1 } },
