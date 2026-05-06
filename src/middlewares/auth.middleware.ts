@@ -33,7 +33,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
   }
 }
