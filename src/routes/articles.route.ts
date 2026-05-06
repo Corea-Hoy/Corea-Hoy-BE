@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getArticlesController, getArticleController } from '../controllers/article.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
 import { toggleLike } from '../controllers/like.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, optionalAuthMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -68,7 +68,7 @@ router.get('/', getArticlesController);
  *       404:
  *         description: 컨텐츠 없음
  */
-router.get('/:id', getArticleController);
+router.get('/:id', optionalAuthMiddleware, getArticleController);
 
 /**
  * @swagger
