@@ -38,6 +38,22 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
 }
 
+// 선택적 인증 미들웨어 (토큰 있으면 req.user 세팅, 없어도 통과)
+export function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const secret = process.env.JWT_SECRET || 'fallback-secret';
+      const decoded = jwt.verify(authHeader.split(' ')[1], secret) as JwtPayload;
+      req.user = decoded;
+    } catch {
+      // 유효하지 않은 토큰이면 req.user 미설정 후 계속 진행
+    }
+  }
+  next();
+}
+
 // 관리자 전용 API에 authMiddleware 다음에 붙이는 미들웨어
 export function adminMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (req.user?.role !== 'ADMIN') {

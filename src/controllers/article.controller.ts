@@ -1,34 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { getArticles, getArticleById } from '../services/article.service';
-import { JwtPayload } from '../middlewares/auth.middleware';
 
-/**
- * 조회수 중복 방지용 viewerKey 추출
- * - 로그인 유저: userId
- * - 비로그인: 클라이언트 IP
- */
-const extractViewerKey = (req: Request): string => {
-  // 로그인 유저면 userId 우선
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    try {
-      const secret = process.env.JWT_SECRET || 'fallback-secret';
-      const decoded = jwt.verify(authHeader.split(' ')[1], secret) as JwtPayload;
-      return `user:${decoded.userId}`;
-    } catch {
-      // 토큰 유효하지 않으면 IP로 fallback
-    }
+/** 조회수 중복 방지용 viewerKey 생성 (optionalAuthMiddleware 실행 후 호출) */
+const buildViewerKey = (req: Request): string => {
+  if (req.user?.userId) {
+    return `user:${req.user.userId}`;
   }
 
-  // 비로그인: IP 추출 (프록시/로드밸런서 헤더 우선)
   const forwarded = req.headers['x-forwarded-for'];
   const ip =
     (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : undefined) ??
     req.socket.remoteAddress ??
     'unknown';
 
-  return `ip:${ip}`;
+  // 날짜 포함: 하루 단위로 중복 방지 (DHCP/NAT IP 재할당 대응)
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return `ip:${ip}:${today}`;
 };
 
 export const getArticlesController = async (req: Request, res: Response, next: NextFunction) => {
@@ -53,7 +40,7 @@ export const getArticlesController = async (req: Request, res: Response, next: N
 
 export const getArticleController = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const viewerKey = extractViewerKey(req);
+    const viewerKey = buildViewerKey(req);
     const article = await getArticleById(req.params.id as string, viewerKey);
 
     if (!article) {
