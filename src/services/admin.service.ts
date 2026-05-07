@@ -212,16 +212,22 @@ export const generateContent = async (
 
       위 내용을 바탕으로 아래 형식에 맞게 한국어 기사를 작성해줘.
       친숙한 말투로 작성하고, 우리 프로젝트의 마스코트는 오이야.
-      기사에서 기자의 주관적인 내용은 뺴고 객관적인 사실만 가져와서 새로운 기사로 작성해줘.
+      기사에서 기자의 주관적인 내용은 빼고 객관적인 사실만 가져와서 새로운 기사로 작성해줘.
 
       [제목-KO]
-      한국어 제목
+      한국어 제목 (태그 없이 텍스트만)
 
       [본문-KO]
-      핵심 내용 중심으로 3~4문단, 각 문단 2~3문장, 외국인 친구에게 설명하는 느낌으로
+      반드시 아래 HTML 형식으로 작성해줘. 다른 형식은 절대 사용하지 마.
+      - 소제목은 <h2>태그
+      - 문단은 <p>태그
+      - 강조는 <strong>태그
+      - 목록은 <ul><li>태그
+      - 핵심 내용 중심으로 3~4문단, 외국인 친구에게 설명하는 느낌으로
+      예시: <h2>소제목</h2><p>내용...</p><p>내용...</p>
 
       [요약-KO]
-      기사 내용과 관련된 간단한 한국 문화 설명
+      기사 내용과 관련된 간단한 한국 문화 설명 (태그 없이 텍스트만)
     `;
   } else {
     prompt = `
@@ -233,13 +239,14 @@ export const generateContent = async (
       아래 형식을 정확히 지켜서 출력해줘:
 
       [제목-ES]
-      Título en español
+      Título en español (sin etiquetas HTML, solo texto)
 
       [본문-ES]
-      Cuerpo del artículo en español, 3~4 párrafos, 2~3 oraciones cada uno
+      Traduce manteniendo exactamente las mismas etiquetas HTML del original.
+      Usa <h2> para subtítulos, <p> para párrafos, <strong> para énfasis, <ul><li> para listas.
 
       [요약-ES]
-      Resumen en una oración
+      Resumen en una oración (sin etiquetas HTML, solo texto)
     `;
   }
 
