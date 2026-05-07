@@ -91,6 +91,18 @@ const RSS_FEEDS = [
     category: 'K-POP',
     slug: 'kpop',
   },
+  {
+    url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=09',
+    source: 'SBS',
+    category: '스포츠',
+    slug: 'sports',
+  },
+  {
+    url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=08',
+    source: 'SBS',
+    category: '문화',
+    slug: 'culture',
+  },
 ];
 
 export const searchNews = async () => {
@@ -245,7 +257,8 @@ export const generateContent = async (
       const msg = e instanceof Error ? e.message : '';
       const is503 = msg.includes('503') || msg.includes('UNAVAILABLE');
       const is429 = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
-      if (attempt < 5 && (is503 || is429)) {
+      const is500 = msg.includes('500') || msg.includes('INTERNAL');
+      if (attempt < 5 && (is503 || is429 || is500)) {
         const delay = attempt * 15000;
         console.log(
           `⚠️  ${is429 ? '429' : '503'} 에러, ${delay / 1000}초 후 재시도... (${attempt}/5)`,
