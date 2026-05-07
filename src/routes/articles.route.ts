@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { getArticlesController, getArticleController } from '../controllers/article.controller';
+import {
+  getArticlesController,
+  getArticleController,
+  getArticleSuggestionsController,
+} from '../controllers/article.controller';
 import { getComments, createComment } from '../controllers/comment.controller';
 import { toggleLike } from '../controllers/like.controller';
 import { authMiddleware, optionalAuthMiddleware } from '../middlewares/auth.middleware';
@@ -49,6 +53,43 @@ const router = Router();
  *         description: 성공
  */
 router.get('/', getArticlesController);
+
+/**
+ * @swagger
+ * /api/articles/suggestions:
+ *   get:
+ *     summary: 검색어 자동완성 🥒
+ *     tags: [Articles]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 검색어 (2글자 이상)
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       titleKo:
+ *                         type: string
+ *                       titleEs:
+ *                         type: string
+ */
+router.get('/suggestions', getArticleSuggestionsController);
 
 /**
  * @swagger
