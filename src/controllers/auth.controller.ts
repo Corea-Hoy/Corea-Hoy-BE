@@ -50,6 +50,14 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
       { expiresIn: '7d' } // 예: 7일간 유효
     );
 
+    // 쿠키 설정
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true, // 브라우저에서 스크립트로 접근 불가 (보안강화)
+      secure: process.env.NODE_ENV === 'production', // 배포 환경에서는 https 필수
+      sameSite: 'lax', // CSRF 방어
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일 (ms 단위)
+    });
+
     res.status(200).json({
       message: '로그인 성공',
       user,
@@ -58,6 +66,19 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * 로그아웃
+ * 쿠키에 저장된 accessToken을 삭제합니다.
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  res.status(200).json({ message: '로그아웃 성공' });
 };
 
 /**

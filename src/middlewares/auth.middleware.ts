@@ -19,14 +19,22 @@ declare global {
 
 // 로그인 필요한 API에 붙이는 미들웨어
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
+  // 1. 헤더 혹은 쿠키에서 토큰 추출
   const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies?.accessToken;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token = '';
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (cookieToken) {
+    token = cookieToken;
+  }
+
+  if (!token) {
     res.status(401).json({ message: '인증 토큰이 없습니다.' });
     return;
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const secret = process.env.JWT_SECRET || 'fallback-secret';
@@ -41,11 +49,20 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 // 선택적 인증 미들웨어 (토큰 있으면 req.user 세팅, 없어도 통과)
 export function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies?.accessToken;
 
-  if (authHeader?.startsWith('Bearer ')) {
+  let token = '';
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (cookieToken) {
+    token = cookieToken;
+  }
+
+  if (token) {
     try {
       const secret = process.env.JWT_SECRET || 'fallback-secret';
-      const decoded = jwt.verify(authHeader.split(' ')[1], secret) as JwtPayload;
+      const decoded = jwt.verify(token, secret) as JwtPayload;
       req.user = decoded;
     } catch {
       // 유효하지 않은 토큰이면 req.user 미설정 후 계속 진행

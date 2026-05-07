@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMe, googleLogin } from '../controllers/auth.controller';
+import { getMe, googleLogin, logout } from '../controllers/auth.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -49,5 +49,17 @@ router.post('/google', googleLogin);
  *         description: 인증 정보가 없음
  */
 router.get('/me', authMiddleware, getMe);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: 로그아웃 (쿠키 삭제) 🥒
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: 로그아웃 성공
+ */
+router.post('/logout', authMiddleware, logout);
 
 export default router;
