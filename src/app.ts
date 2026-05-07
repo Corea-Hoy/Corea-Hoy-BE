@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './lib/swagger';
 import { errorHandler } from './middlewares/error.middleware';
@@ -7,7 +8,17 @@ import router from './routes';
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000',
+      'https://coreahoyfe.vercel.app',
+      'https://www.coreahoyfe.vercel.app',
+    ],
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
 
 app.use(
