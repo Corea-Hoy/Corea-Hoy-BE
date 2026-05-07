@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { getArticles, getArticleById } from '../services/article.service';
+import { getArticles, getArticleById, getArticleSuggestions } from '../services/article.service';
 
-/** 조회수 중복 방지용 viewerKey 생성 (optionalAuthMiddleware 실행 후 호출) */
 const buildViewerKey = (req: Request): string => {
   if (req.user?.userId) {
     return `user:${req.user.userId}`;
@@ -13,8 +12,7 @@ const buildViewerKey = (req: Request): string => {
     req.socket.remoteAddress ??
     'unknown';
 
-  // 날짜 포함: 하루 단위로 중복 방지 (DHCP/NAT IP 재할당 대응)
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const today = new Date().toISOString().slice(0, 10);
   return `ip:${ip}:${today}`;
 };
 
@@ -49,6 +47,20 @@ export const getArticleController = async (req: Request, res: Response, next: Ne
     }
 
     res.json({ success: true, data: article });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getArticleSuggestionsController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : '';
+    const suggestions = await getArticleSuggestions(q);
+    res.json({ success: true, data: suggestions });
   } catch (err) {
     next(err);
   }
