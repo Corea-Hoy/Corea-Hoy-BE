@@ -53,8 +53,8 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     // 쿠키 설정
     res.cookie('accessToken', accessToken, {
       httpOnly: true, // 브라우저에서 스크립트로 접근 불가 (보안강화)
-      secure: process.env.NODE_ENV === 'production', // 배포 환경에서는 https 필수
-      sameSite: 'lax', // CSRF 방어
+      secure: true,   // sameSite: 'none'을 사용하려면 반드시 true여야 함
+      sameSite: 'none', // 크로스 도메인 간 쿠키 전송 허용
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7일 (ms 단위)
     });
 
@@ -75,8 +75,8 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
 export const logout = async (req: Request, res: Response): Promise<void> => {
   res.clearCookie('accessToken', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none',
   });
   res.status(200).json({ message: '로그아웃 성공' });
 };
