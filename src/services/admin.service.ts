@@ -14,16 +14,6 @@ interface NewsArticle {
   thumbnailUrl: string | null;
 }
 
-interface NaverNewsResponse {
-  items: {
-    title: string;
-    description: string;
-    originallink: string;
-    link: string;
-    pubDate: string;
-  }[];
-}
-
 interface RssItem {
   title: string;
   contentSnippet?: string;
@@ -103,65 +93,12 @@ const RSS_FEEDS = [
   },
 ];
 
-const NAVER_KEYWORDS = [
-  { keyword: 'K-POP 신보', slug: 'kpop', category: 'K-POP' },
-  { keyword: '한류 콘서트', slug: 'kpop', category: 'K-POP' },
-  { keyword: '아이돌 컴백', slug: 'kpop', category: 'K-POP' },
-  { keyword: '케이팝 차트', slug: 'kpop', category: 'K-POP' },
-  { keyword: '한국드라마 OTT', slug: 'culture', category: '문화' },
-  { keyword: '한국 스포츠', slug: 'sports', category: '스포츠' },
-];
-
-const fetchNaverNews = async () => {
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return [];
-
-  const results = await Promise.allSettled(
-    NAVER_KEYWORDS.map(async ({ keyword, slug, category }) => {
-      const url = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(keyword)}&display=5&sort=date`;
-      const res = await fetch(url, {
-        headers: {
-          'X-Naver-Client-Id': clientId,
-          'X-Naver-Client-Secret': clientSecret,
-        },
-      });
-      if (!res.ok) return { slug, category, items: [] };
-      const data = (await res.json()) as NaverNewsResponse;
-      return { slug, category, items: data.items ?? [] };
-    }),
-  );
-
-  const articles: NewsArticle[] = [];
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      const { slug, category, items } = result.value;
-      items.forEach((item) => {
-        articles.push({
-          title: item.title.replace(/<[^>]+>/g, ''),
-          summary: item.description.replace(/<[^>]+>/g, ''),
-          url: item.originallink || item.link,
-          source: '네이버뉴스',
-          category,
-          slug,
-          publishedAt: item.pubDate,
-          thumbnailUrl: null,
-        });
-      });
-    }
-  }
-  return articles;
-};
-
 export const searchNews = async () => {
-  const [feedResults, naverArticles] = await Promise.all([
-    Promise.allSettled(
-      RSS_FEEDS.map((feed) =>
-        rssParser.parseURL(feed.url).then((r) => ({ feed, items: r.items as RssItem[] })),
-      ),
+  const feedResults = await Promise.allSettled(
+    RSS_FEEDS.map((feed) =>
+      rssParser.parseURL(feed.url).then((r) => ({ feed, items: r.items as RssItem[] })),
     ),
-    fetchNaverNews(),
-  ]);
+  );
 
   const articles: NewsArticle[] = [];
 
@@ -191,8 +128,6 @@ export const searchNews = async () => {
     }
   }
 
-  articles.push(...naverArticles);
-
   const urls = articles.map((a) => a.url).filter(Boolean);
   const existing = await prisma.articleSource.findMany({
     where: { url: { in: urls } },
@@ -202,11 +137,13 @@ export const searchNews = async () => {
   const filtered = articles.filter((a) => !existingUrls.has(a.url));
 
   const seenUrls = new Set<string>();
-  const deduped = filtered.filter((a) => {
-    if (seenUrls.has(a.url)) return false;
-    seenUrls.add(a.url);
-    return true;
-  });
+  const deduped = filtered
+    .filter((a) => {
+      if (seenUrls.has(a.url)) return false;
+      seenUrls.add(a.url);
+      return true;
+    })
+    .filter((a) => a.thumbnailUrl !== null);
 
   const sourceMap = new Map<string, NewsArticle[]>();
   for (const article of deduped) {
