@@ -4,7 +4,7 @@ import * as commentService from '../services/comment.service';
 export const getComments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
-    const limit = Math.min(Number(req.query.limit) || 10, 50); // 최대 50개 제한
+    const limit = Math.min(Math.max(Math.floor(Number(req.query.limit) || 10), 1), 50); // 1~50 정수 clamp
 
     const result = await commentService.getComments(req.params.id as string, cursor, limit);
     res.json({ success: true, ...result });
