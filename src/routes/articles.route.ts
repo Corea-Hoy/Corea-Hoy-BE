@@ -137,7 +137,7 @@ router.post('/:id/like', authMiddleware, toggleLike);
  * @swagger
  * /api/articles/{id}/comments:
  *   get:
- *     summary: 특정 기사의 댓글 리스트 조회 🥒
+ *     summary: 특정 기사의 댓글 리스트 조회 (최신순, 커서 페이지네이션) 🥒
  *     tags: [Articles]
  *     parameters:
  *       - in: path
@@ -145,9 +145,36 @@ router.post('/:id/like', authMiddleware, toggleLike);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: cursor
+ *         schema:
+ *           type: string
+ *         description: 마지막으로 받은 댓글 ID (없으면 첫 페이지)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: 가져올 댓글 수 (기본 10, 최대 50)
  *     responses:
  *       200:
  *         description: 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                 nextCursor:
+ *                   type: string
+ *                   nullable: true
+ *                   description: 다음 페이지 커서 (null이면 마지막 페이지)
+ *                 hasMore:
+ *                   type: boolean
+ *                   description: 더 불러올 댓글이 있는지 여부
  *   post:
  *     summary: 댓글 작성 🥒
  *     tags: [Articles]
