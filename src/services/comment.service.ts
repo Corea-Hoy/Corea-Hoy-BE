@@ -1,12 +1,14 @@
 import { prisma } from '../lib/prisma';
 
-export const getComments = async (articleId: string) => {
-  return prisma.comment.findMany({
+export const getComments = async (articleId: string, cursor?: string, limit = 10) => {
+  const comments = await prisma.comment.findMany({
     where: {
       articleId,
       deletedAt: null,
+      ...(cursor && { id: { lt: cursor } }),
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
+    take: limit + 1, // 다음 페이지 존재 여부 확인용으로 1개 더 가져옴
     select: {
       id: true,
       body: true,
@@ -17,6 +19,12 @@ export const getComments = async (articleId: string) => {
       },
     },
   });
+
+  const hasMore = comments.length > limit;
+  const data = hasMore ? comments.slice(0, limit) : comments;
+  const nextCursor = hasMore ? data[data.length - 1].id : null;
+
+  return { data, nextCursor, hasMore };
 };
 
 export const createComment = async (articleId: string, userId: string, body: string) => {
