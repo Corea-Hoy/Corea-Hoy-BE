@@ -5,10 +5,10 @@ export const getComments = async (articleId: string, cursor?: string, limit = 10
     where: {
       articleId,
       deletedAt: null,
-      ...(cursor && { id: { lt: cursor } }),
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1, // 다음 페이지 존재 여부 확인용으로 1개 더 가져옴
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }), // Prisma 내장 커서 (cursor 항목 자체는 skip)
     select: {
       id: true,
       body: true,
