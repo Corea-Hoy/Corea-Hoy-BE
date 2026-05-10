@@ -17,10 +17,7 @@ export const findOrCreateUser = async (payload: UserPayload): Promise<User> => {
     where: {
       email: payload.email
     },
-    update: {
-      nickname: payload.name,
-      avatarEmoji: payload.image,
-    },
+    update: {},
     create: {
       email: payload.email,
       googleId: payload.sub || payload.email,
