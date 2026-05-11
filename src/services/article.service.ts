@@ -99,9 +99,31 @@ export const getArticleById = async (id: string, viewerKey?: string, userId?: st
 
   if (viewerKey) {
     try {
-      await prisma.articleView.create({ data: { articleId: id, viewerKey } });
+      // ArticleView 생성 + viewCount 증가를 트랜잭션으로 묶어 데이터 일관성 보장
+      const [updated, isLiked] = await Promise.all([
+        prisma.$transaction([
+          prisma.articleView.create({ data: { articleId: id, viewerKey } }),
+          prisma.article.update({
+            where: { id },
+            data: { viewCount: { increment: 1 } },
+            include: {
+              category: { select: { id: true, name: true, slug: true } },
+              sources: true,
+              _count: { select: { likes: true, comments: true } },
+            },
+          }),
+        ]),
+        userId
+          ? prisma.like
+              .findUnique({ where: { userId_articleId: { userId, articleId: id } } })
+              .then(Boolean)
+          : Promise.resolve(false),
+      ]);
+
+      return { ...(updated[1] as typeof article), isLiked };
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        // 중복 조회 — viewCount 증가 없이 기사만 반환
         const isLiked = userId
           ? !!(await prisma.like.findUnique({
               where: { userId_articleId: { userId, articleId: id } },
@@ -109,28 +131,15 @@ export const getArticleById = async (id: string, viewerKey?: string, userId?: st
           : false;
         return { ...article, isLiked };
       }
-      console.error('[viewCount] articleView 생성 실패:', e);
+      console.error('[viewCount] 트랜잭션 실패:', e);
     }
   }
 
-  const [updated, isLiked] = await Promise.all([
-    prisma.article.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        sources: true,
-        _count: { select: { likes: true, comments: true } },
-      },
-    }),
-    userId
-      ? prisma.like
-          .findUnique({ where: { userId_articleId: { userId, articleId: id } } })
-          .then(Boolean)
-      : Promise.resolve(false),
-  ]);
-
-  return { ...updated, isLiked };
+  // viewerKey 없는 경우 (중복 방지 없이 기사만 반환)
+  const isLiked = userId
+    ? !!(await prisma.like.findUnique({ where: { userId_articleId: { userId, articleId: id } } }))
+    : false;
+  return { ...article, isLiked };
 };
 
 export const getArticleSuggestions = async (q: string) => {
