@@ -53,7 +53,7 @@ const router = Router();
  *       200:
  *         description: 성공
  */
-router.get('/', getArticlesController);
+router.get('/', optionalAuthMiddleware, getArticlesController);
 
 /**
  * @swagger

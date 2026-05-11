@@ -28,6 +28,7 @@ export const getArticlesController = async (req: Request, res: Response, next: N
       sort: typeof sort === 'string' ? sort : undefined,
       page,
       limit,
+      userId: req.user?.userId,
     });
 
     res.json({ success: true, data: result });
