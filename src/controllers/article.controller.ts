@@ -39,7 +39,8 @@ export const getArticlesController = async (req: Request, res: Response, next: N
 export const getArticleController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const viewerKey = buildViewerKey(req);
-    const article = await getArticleById(req.params.id as string, viewerKey);
+    const userId = req.user?.userId;
+    const article = await getArticleById(req.params.id as string, viewerKey, userId);
 
     if (!article) {
       res.status(404).json({ success: false, message: '기사를 찾을 수 없습니다.' });
