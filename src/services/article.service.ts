@@ -72,7 +72,7 @@ export const getArticles = async ({
   };
 };
 
-export const getArticleById = async (id: string, viewerKey?: string) => {
+export const getArticleById = async (id: string, viewerKey?: string, userId?: string) => {
   const article = await prisma.article.findUnique({
     where: { id },
     include: {
@@ -89,21 +89,35 @@ export const getArticleById = async (id: string, viewerKey?: string) => {
       await prisma.articleView.create({ data: { articleId: id, viewerKey } });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        return article;
+        const isLiked = userId
+          ? !!(await prisma.like.findUnique({
+              where: { userId_articleId: { userId, articleId: id } },
+            }))
+          : false;
+        return { ...article, isLiked };
       }
       console.error('[viewCount] articleView 생성 실패:', e);
     }
   }
 
-  return prisma.article.update({
-    where: { id },
-    data: { viewCount: { increment: 1 } },
-    include: {
-      category: { select: { id: true, name: true, slug: true } },
-      sources: true,
-      _count: { select: { likes: true, comments: true } },
-    },
-  });
+  const [updated, isLiked] = await Promise.all([
+    prisma.article.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        sources: true,
+        _count: { select: { likes: true, comments: true } },
+      },
+    }),
+    userId
+      ? prisma.like
+          .findUnique({ where: { userId_articleId: { userId, articleId: id } } })
+          .then(Boolean)
+      : Promise.resolve(false),
+  ]);
+
+  return { ...updated, isLiked };
 };
 
 export const getArticleSuggestions = async (q: string) => {
