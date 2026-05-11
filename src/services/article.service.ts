@@ -7,6 +7,7 @@ interface GetArticlesParams {
   sort?: string;
   page?: number;
   limit?: number;
+  userId?: string;
 }
 
 export const getArticles = async ({
@@ -15,6 +16,7 @@ export const getArticles = async ({
   sort = 'latest',
   page = 1,
   limit = 10,
+  userId,
 }: GetArticlesParams) => {
   const skip = (page - 1) * limit;
 
@@ -61,8 +63,19 @@ export const getArticles = async ({
     prisma.article.count({ where }),
   ]);
 
+  // 로그인 유저면 좋아요 여부 일괄 조회
+  let likedSet = new Set<string>();
+  if (userId && articles.length > 0) {
+    const articleIds = articles.map((a) => a.id);
+    const likes = await prisma.like.findMany({
+      where: { userId, articleId: { in: articleIds } },
+      select: { articleId: true },
+    });
+    likedSet = new Set(likes.map((l) => l.articleId));
+  }
+
   return {
-    articles,
+    articles: articles.map((a) => ({ ...a, isLiked: likedSet.has(a.id) })),
     pagination: {
       total,
       page,
