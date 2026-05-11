@@ -7,6 +7,7 @@ import {
 import { getComments, createComment } from '../controllers/comment.controller';
 import { toggleLike } from '../controllers/like.controller';
 import { authMiddleware, optionalAuthMiddleware } from '../middlewares/auth.middleware';
+import { commentLimiter, likeLimiter } from '../middlewares/rateLimit.middleware';
 
 const router = Router();
 
@@ -131,7 +132,7 @@ router.get('/:id', optionalAuthMiddleware, getArticleController);
  *       401:
  *         description: 인증 필요
  */
-router.post('/:id/like', authMiddleware, toggleLike);
+router.post('/:id/like', authMiddleware, likeLimiter, toggleLike);
 
 /**
  * @swagger
@@ -202,6 +203,6 @@ router.post('/:id/like', authMiddleware, toggleLike);
  *         description: 인증 필요
  */
 router.get('/:id/comments', getComments);
-router.post('/:id/comments', authMiddleware, createComment);
+router.post('/:id/comments', authMiddleware, commentLimiter, createComment);
 
 export default router;
