@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, adminMiddleware } from '../middlewares/auth.middleware';
+import { adminAiLimiter } from '../middlewares/rateLimit.middleware';
 import {
   searchNews,
   generateContent,
@@ -113,7 +114,7 @@ router.post('/pipeline/search', searchNews);
  *       403:
  *         description: 관리자 권한 없음
  */
-router.post('/pipeline/generate', generateContent);
+router.post('/pipeline/generate', adminAiLimiter, generateContent);
 
 /**
  * @swagger
