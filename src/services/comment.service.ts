@@ -40,7 +40,7 @@ export const createComment = async (articleId: string, userId: string, body: str
   const article = await prisma.article.findUnique({ where: { id: articleId } });
   if (!article) return null;
 
-  return prisma.comment.create({
+  const comment = await prisma.comment.create({
     data: { articleId, userId, body },
     select: {
       id: true,
@@ -52,6 +52,8 @@ export const createComment = async (articleId: string, userId: string, body: str
       },
     },
   });
+
+  return { ...comment, isAuthor: true }; // 방금 작성한 댓글이므로 항상 true
 };
 
 export const updateComment = async (commentId: string, userId: string, body: string) => {
