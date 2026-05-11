@@ -12,11 +12,9 @@ export const toggleLike = async (articleId: string, userId: string) => {
     return { liked: true, likeCount };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      // 좋아요 삭제 + 총 개수 동시 조회
-      const [, likeCount] = await Promise.all([
-        prisma.like.delete({ where: { userId_articleId: { userId, articleId } } }),
-        prisma.like.count({ where: { articleId } }).then((count) => count - 1), // 삭제 후 개수
-      ]);
+      // 삭제 완료 후 카운트 조회 (순서 보장)
+      await prisma.like.delete({ where: { userId_articleId: { userId, articleId } } });
+      const likeCount = await prisma.like.count({ where: { articleId } });
       return { liked: false, likeCount };
     }
     throw e;
