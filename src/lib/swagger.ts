@@ -10,7 +10,7 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: 'https://corea-hoy-be.onrender.com',
+        url: 'https://corea-hoy-be-us.onrender.com',
         description: '운영 서버 (Render)',
       },
       {
