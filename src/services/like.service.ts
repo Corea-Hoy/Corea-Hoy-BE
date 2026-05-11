@@ -6,14 +6,16 @@ export const toggleLike = async (articleId: string, userId: string) => {
   if (!article) return null;
 
   try {
+    // 좋아요 추가 + 총 개수 동시 조회
     await prisma.like.create({ data: { userId, articleId } });
-    return { liked: true };
+    const likeCount = await prisma.like.count({ where: { articleId } });
+    return { liked: true, likeCount };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      await prisma.like.delete({
-        where: { userId_articleId: { userId, articleId } },
-      });
-      return { liked: false };
+      // 삭제 완료 후 카운트 조회 (순서 보장)
+      await prisma.like.delete({ where: { userId_articleId: { userId, articleId } } });
+      const likeCount = await prisma.like.count({ where: { articleId } });
+      return { liked: false, likeCount };
     }
     throw e;
   }
