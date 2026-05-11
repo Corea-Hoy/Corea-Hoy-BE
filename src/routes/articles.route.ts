@@ -202,7 +202,7 @@ router.post('/:id/like', authMiddleware, likeLimiter, toggleLike);
  *       401:
  *         description: 인증 필요
  */
-router.get('/:id/comments', getComments);
+router.get('/:id/comments', optionalAuthMiddleware, getComments);
 router.post('/:id/comments', authMiddleware, commentLimiter, createComment);
 
 export default router;

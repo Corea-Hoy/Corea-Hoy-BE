@@ -1,6 +1,11 @@
 import { prisma } from '../lib/prisma';
 
-export const getComments = async (articleId: string, cursor?: string, limit = 10) => {
+export const getComments = async (
+  articleId: string,
+  cursor?: string,
+  limit = 10,
+  userId?: string,
+) => {
   const comments = await prisma.comment.findMany({
     where: {
       articleId,
@@ -24,7 +29,11 @@ export const getComments = async (articleId: string, cursor?: string, limit = 10
   const data = hasMore ? comments.slice(0, limit) : comments;
   const nextCursor = hasMore ? data[data.length - 1].id : null;
 
-  return { data, nextCursor, hasMore };
+  return {
+    data: data.map((c) => ({ ...c, isAuthor: userId ? c.user.id === userId : false })),
+    nextCursor,
+    hasMore,
+  };
 };
 
 export const createComment = async (articleId: string, userId: string, body: string) => {

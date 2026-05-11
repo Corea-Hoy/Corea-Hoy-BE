@@ -6,7 +6,12 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
     const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
     const limit = Math.min(Math.max(Math.floor(Number(req.query.limit) || 10), 1), 50); // 1~50 정수 clamp
 
-    const result = await commentService.getComments(req.params.id as string, cursor, limit);
+    const result = await commentService.getComments(
+      req.params.id as string,
+      cursor,
+      limit,
+      req.user?.userId,
+    );
     res.json({ success: true, ...result });
   } catch (err) {
     next(err);
