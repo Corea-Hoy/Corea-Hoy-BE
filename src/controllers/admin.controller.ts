@@ -90,6 +90,21 @@ export const getAdminArticles = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const getAdminArticleById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const article = await adminService.getAdminArticleById(req.params.id as string);
+
+    if (!article) {
+      res.status(404).json({ success: false, message: '기사를 찾을 수 없습니다.' });
+      return;
+    }
+
+    res.json({ success: true, data: article });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createDraftArticle = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {

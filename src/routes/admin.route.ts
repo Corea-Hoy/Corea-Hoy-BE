@@ -5,6 +5,7 @@ import {
   searchNews,
   generateContent,
   getAdminArticles,
+  getAdminArticleById,
   createDraftArticle,
   updateArticle,
   publishArticle,
@@ -144,7 +145,7 @@ router.post('/pipeline/generate', adminAiLimiter, generateContent);
  *           default: 20
  *     responses:
  *       200:
- *         description: "{ articles, pagination: { total, page, limit, totalPages } }"
+ *         description: "{ articles, counts: { total, DRAFT, PUBLISHED, ARCHIVED }, pagination: { total, page, limit, totalPages } }"
  *   post:
  *     summary: "③ 기사 DRAFT 저장 🥒"
  *     description: |
@@ -219,11 +220,30 @@ router.post('/pipeline/generate', adminAiLimiter, generateContent);
  *         description: 필수 필드 누락 또는 유효하지 않은 값
  */
 router.get('/articles', getAdminArticles);
+router.get('/articles/:id', getAdminArticleById);
 router.post('/articles', createDraftArticle);
 
 /**
  * @swagger
  * /api/admin/articles/{id}:
+ *   get:
+ *     summary: "기사 상세 조회 (이어서 쓰기용) 🥒"
+ *     description: 특정 기사의 모든 상세 데이터를 조회합니다. '이어서 작업하기' 클릭 시 호출합니다.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 기사 UUID
+ *     responses:
+ *       200:
+ *         description: 기사 상세 정보 반환
+ *       404:
+ *         description: 기사를 찾을 수 없음
  *   put:
  *     summary: "기사 내용 수동 수정 🥒"
  *     description: 저장된 기사 내용을 수정합니다. 수정할 필드만 포함해서 보내면 됩니다.
