@@ -599,7 +599,7 @@ export const getAdminArticles = async (status?: ArticleStatus, page = 1, limit =
   const where: Prisma.ArticleWhereInput = status ? { status } : {};
   const skip = (page - 1) * limit;
 
-  const [articles, total] = await Promise.all([
+  const [articles, total, counts] = await Promise.all([
     prisma.article.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -622,9 +622,35 @@ export const getAdminArticles = async (status?: ArticleStatus, page = 1, limit =
       },
     }),
     prisma.article.count({ where }),
+    prisma.article.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    }),
   ]);
 
-  return { articles, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  const countMap = {
+    total: counts.reduce((acc, curr) => acc + curr._count.status, 0),
+    DRAFT: counts.find((c) => c.status === 'DRAFT')?._count.status || 0,
+    PUBLISHED: counts.find((c) => c.status === 'PUBLISHED')?._count.status || 0,
+    ARCHIVED: counts.find((c) => c.status === 'ARCHIVED')?._count.status || 0,
+  };
+
+  return {
+    articles,
+    counts: countMap,
+    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const getAdminArticleById = async (id: string) => {
+  return prisma.article.findUnique({
+    where: { id },
+    include: {
+      category: { select: { id: true, name: true, slug: true } },
+      sources: true,
+      _count: { select: { likes: true, comments: true } },
+    },
+  });
 };
 
 export const createDraftArticle = async (data: {
