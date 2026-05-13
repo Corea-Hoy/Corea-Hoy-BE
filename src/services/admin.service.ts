@@ -252,18 +252,25 @@ export const searchNews = async () => {
   const youtubeArticles = await collectYouTube();
   articles.push(...youtubeArticles);
 
-  // DB 중복 제거
+  // DB 중복 제거 (URL + 최근 30일 제목)
+  const normalizeTitle = (title: string) => title.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+
   const urls = articles.map((a) => a.url).filter(Boolean);
-  const existing = await prisma.articleSource.findMany({
-    where: { url: { in: urls } },
-    select: { url: true },
-  });
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [existing, recentArticles] = await Promise.all([
+    prisma.articleSource.findMany({
+      where: { url: { in: urls } },
+      select: { url: true },
+    }),
+    prisma.article.findMany({
+      where: { createdAt: { gte: since } },
+      select: { titleKo: true },
+    }),
+  ]);
   const existingUrls = new Set(existing.map((s) => s.url));
 
-  const normalizeTitle = (title: string) => title.replace(/[\s\W_]+/g, '').toLowerCase();
-
   const seenUrls = new Set<string>();
-  const seenTitles = new Set<string>();
+  const seenTitles = new Set<string>(recentArticles.map((a) => normalizeTitle(a.titleKo)));
   const deduped = articles
     .filter((a) => {
       const normTitle = normalizeTitle(a.title);
