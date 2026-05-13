@@ -291,39 +291,26 @@ export const searchNews = async () => {
     }
   }
 
-  const sourceMap = new Map<string, NewsArticle[]>();
+  // 카테고리별로 그룹화 후 셔플
+  const categoryMap = new Map<string, NewsArticle[]>();
   for (const article of deduped) {
-    if (!sourceMap.has(article.source)) sourceMap.set(article.source, []);
-    sourceMap.get(article.source)!.push(article);
+    if (!categoryMap.has(article.category)) categoryMap.set(article.category, []);
+    categoryMap.get(article.category)!.push(article);
   }
-  for (const group of sourceMap.values()) {
+  for (const group of categoryMap.values()) {
     for (let i = group.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [group[i], group[j]] = [group[j], group[i]];
     }
   }
 
-  const sources = [...sourceMap.values()];
-  const counts = new Array(sources.length).fill(0);
-  const indices = new Array(sources.length).fill(0);
+  // 카테고리별 최대 4개, 총 최대 24개
   const selected: NewsArticle[] = [];
-
-  while (selected.length < 15) {
-    let added = false;
-    for (let i = 0; i < sources.length; i++) {
-      if (selected.length >= 15) break;
-      if (counts[i] >= 3) continue;
-      if (indices[i] < sources[i].length) {
-        selected.push(sources[i][indices[i]]);
-        indices[i]++;
-        counts[i]++;
-        added = true;
-      }
-    }
-    if (!added) break;
+  for (const group of categoryMap.values()) {
+    selected.push(...group.slice(0, 4));
   }
 
-  return selected;
+  return selected.slice(0, 24);
 };
 
 export const generateContent = async (
