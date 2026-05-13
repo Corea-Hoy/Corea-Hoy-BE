@@ -260,11 +260,16 @@ export const searchNews = async () => {
   });
   const existingUrls = new Set(existing.map((s) => s.url));
 
+  const normalizeTitle = (title: string) => title.replace(/[\s\W_]+/g, '').toLowerCase();
+
   const seenUrls = new Set<string>();
+  const seenTitles = new Set<string>();
   const deduped = articles
     .filter((a) => {
-      if (existingUrls.has(a.url) || seenUrls.has(a.url)) return false;
+      const normTitle = normalizeTitle(a.title);
+      if (existingUrls.has(a.url) || seenUrls.has(a.url) || seenTitles.has(normTitle)) return false;
       seenUrls.add(a.url);
+      seenTitles.add(normTitle);
       return true;
     })
     .filter((a) => a.thumbnailUrl !== null)
