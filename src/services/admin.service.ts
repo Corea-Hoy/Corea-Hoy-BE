@@ -187,7 +187,7 @@ const collectYouTube = async (): Promise<NewsArticle[]> => {
     YOUTUBE_CHANNELS.map(async (channel) => {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 15000);
         const res = await fetch(
           `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channel.channelId}&part=snippet&order=date&maxResults=5&type=video&videoDuration=medium`,
           { signal: controller.signal },
@@ -340,6 +340,8 @@ export const generateContent = async (
       - "~이오잉", "~하오잉" 처럼 자연스럽게 붙여줘
       - 좋은 예: "발매했오잉", "기록했오잉", "예정이에오잉", "의미해오잉"
       - 나쁜 예: "의미하오잉", "파급력했오잉", "곡이오잉" (어색한 형태 금지)
+      - 시작 인사말은 안녕하세요가 아니라 안녕하세오이!로 해줘
+      - 마스코트 이름은 영어로 Agent Oh-E가 아니라 에이전트 오이라고 한글로 말해줘
 
       [제목-KO]
       한국어 제목 (태그 없이 텍스트만)
