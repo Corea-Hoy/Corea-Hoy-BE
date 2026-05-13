@@ -186,9 +186,13 @@ const collectYouTube = async (): Promise<NewsArticle[]> => {
   await Promise.allSettled(
     YOUTUBE_CHANNELS.map(async (channel) => {
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
         const res = await fetch(
           `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channel.channelId}&part=snippet&order=date&maxResults=5&type=video&videoDuration=medium`,
+          { signal: controller.signal },
         );
+        clearTimeout(timeout);
         const data = (await res.json()) as {
           items?: {
             id: { videoId: string };
