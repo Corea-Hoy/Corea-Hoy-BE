@@ -56,14 +56,8 @@ const RSS_FEEDS = [
     slug: 'culture',
   },
   {
-    url: 'https://www.yna.co.kr/rss/politics.xml',
+    url: 'https://www.yna.co.kr/rss/society.xml',
     source: '연합뉴스',
-    category: '뉴스',
-    slug: 'news',
-  },
-  {
-    url: 'https://imnews.imbc.com/rss/news/news_00.xml',
-    source: 'MBC',
     category: '뉴스',
     slug: 'news',
   },
@@ -105,6 +99,127 @@ const RSS_FEEDS = [
   },
 ];
 
+const YOUTUBE_CHANNELS = [
+  {
+    channelId: 'UCpiCK8c6PBktcxq7Az_t4RQ',
+    source: 'Netflix K-Content',
+    category: '드라마',
+    slug: 'drama',
+  },
+  { channelId: 'UCNIiH_4ArJNd_cDZApZ7AFg', source: 'TVING', category: '드라마', slug: 'drama' },
+  { channelId: 'UC3IZKseVpdzPSBaWxBxundA', source: 'HYBE LABELS', category: 'K-POP', slug: 'kpop' },
+  { channelId: 'UCeLPm9yH_a_QH8n6445G-Ow', source: 'KBS Kpop', category: 'K-POP', slug: 'kpop' },
+  { channelId: 'UCtCiO5t2voB14CmZKTkIzPQ', source: '딩고뮤직', category: 'K-POP', slug: 'kpop' },
+  { channelId: 'UCEf_Bc-KVd7onSeifS3py9g', source: 'SMTOWN', category: 'K-POP', slug: 'kpop' },
+  { channelId: 'UC3iFLiOtLHkUYcqkEWpaLjQ', source: '올리브영', category: '스타일', slug: 'style' },
+  {
+    channelId: 'UC2DHU9RPlx9DpY0pMfL7jBg',
+    source: 'Vogue Korea',
+    category: '스타일',
+    slug: 'style',
+  },
+  { channelId: 'UC-PHIZjV-oX8H7zD1cCN2NQ', source: 'Arirang TV', category: '뉴스', slug: 'news' },
+];
+
+const WEATHER_KEYWORDS = [
+  '날씨',
+  '기온',
+  '기상',
+  '강수',
+  '태풍',
+  '미세먼지',
+  '폭염',
+  '한파',
+  '황사',
+  '호우',
+  '폭설',
+  '천둥',
+  '번개',
+  '예보',
+  '강풍',
+];
+const POLITICS_KEYWORDS = [
+  '대통령',
+  '국회',
+  '여당',
+  '야당',
+  '선거',
+  '민주당',
+  '국민의힘',
+  '의원',
+  '장관',
+  '총리',
+  '탄핵',
+  '국정감사',
+  '개각',
+  '정치',
+  '외교부',
+  '청와대',
+];
+const DRAMA_KEYWORDS = [
+  '드라마',
+  '넷플릭스',
+  'OTT',
+  '시즌',
+  '웨이브',
+  '티빙',
+  '왓챠',
+  '시리즈',
+  '주연',
+  '출연',
+];
+
+const decodeEntities = (str: string) =>
+  str
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'");
+
+const collectYouTube = async (): Promise<NewsArticle[]> => {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) return [];
+
+  const articles: NewsArticle[] = [];
+
+  await Promise.allSettled(
+    YOUTUBE_CHANNELS.map(async (channel) => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channel.channelId}&part=snippet&order=date&maxResults=5&type=video&videoDuration=medium`,
+          { signal: controller.signal },
+        );
+        clearTimeout(timeout);
+        const data = (await res.json()) as {
+          items?: {
+            id: { videoId: string };
+            snippet: { title: string; description: string; thumbnails: { high: { url: string } } };
+          }[];
+        };
+        if (!data.items) return;
+        for (const item of data.items) {
+          articles.push({
+            title: decodeEntities(item.snippet.title),
+            summary: item.snippet.description || undefined,
+            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+            source: channel.source,
+            category: channel.category,
+            slug: channel.slug,
+            thumbnailUrl: item.snippet.thumbnails.high.url,
+          });
+        }
+      } catch {
+        // 개별 채널 실패는 무시
+      }
+    }),
+  );
+
+  return articles;
+};
+
 export const searchNews = async () => {
   const feedResults = await Promise.allSettled(
     RSS_FEEDS.map((feed) =>
@@ -118,13 +233,6 @@ export const searchNews = async () => {
     if (result.status === 'fulfilled') {
       const { feed, items } = result.value;
       items.slice(0, 5).forEach((item) => {
-        const decodeEntities = (str: string) =>
-          str
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&#39;/g, "'");
         articles.push({
           title: decodeEntities(item.title),
           summary: item.contentSnippet ? decodeEntities(item.contentSnippet) : undefined,
@@ -140,22 +248,36 @@ export const searchNews = async () => {
     }
   }
 
+  // YouTube 수집
+  const youtubeArticles = await collectYouTube();
+  articles.push(...youtubeArticles);
+
+  // DB 중복 제거
   const urls = articles.map((a) => a.url).filter(Boolean);
   const existing = await prisma.articleSource.findMany({
     where: { url: { in: urls } },
     select: { url: true },
   });
   const existingUrls = new Set(existing.map((s) => s.url));
-  const filtered = articles.filter((a) => !existingUrls.has(a.url));
 
   const seenUrls = new Set<string>();
-  const deduped = filtered
+  const deduped = articles
     .filter((a) => {
-      if (seenUrls.has(a.url)) return false;
+      if (existingUrls.has(a.url) || seenUrls.has(a.url)) return false;
       seenUrls.add(a.url);
       return true;
     })
-    .filter((a) => a.thumbnailUrl !== null);
+    .filter((a) => a.thumbnailUrl !== null)
+    .filter((a) => !WEATHER_KEYWORDS.some((kw) => a.title.includes(kw)))
+    .filter((a) => !POLITICS_KEYWORDS.some((kw) => a.title.includes(kw)));
+
+  // 연예 피드에서 드라마 관련 기사 카테고리 재분류
+  for (const article of deduped) {
+    if (article.category === 'K-POP' && DRAMA_KEYWORDS.some((kw) => article.title.includes(kw))) {
+      article.category = '드라마';
+      article.slug = 'drama';
+    }
+  }
 
   const sourceMap = new Map<string, NewsArticle[]>();
   for (const article of deduped) {
@@ -218,6 +340,8 @@ export const generateContent = async (
       - "~이오잉", "~하오잉" 처럼 자연스럽게 붙여줘
       - 좋은 예: "발매했오잉", "기록했오잉", "예정이에오잉", "의미해오잉"
       - 나쁜 예: "의미하오잉", "파급력했오잉", "곡이오잉" (어색한 형태 금지)
+      - 시작 인사말은 안녕하세요가 아니라 안녕하세오이!로 해줘
+      - 마스코트 이름은 영어로 Agent Oh-E가 아니라 에이전트 오이라고 한글로 말해줘
 
       [제목-KO]
       한국어 제목 (태그 없이 텍스트만)
