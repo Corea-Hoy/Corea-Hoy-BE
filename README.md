@@ -48,6 +48,71 @@ http://localhost:4000/api-docs
 
 <br>
 
+## 🌐 배포 (Render)
+
+운영 서버: `https://corea-hoy-be-us.onrender.com`
+
+### 슬립 방지 (cron-job.org)
+
+Render 무료 플랜은 **15분간 요청이 없으면 인스턴스가 슬립**되고, 다음 요청에서 콜드 스타트로 30초 이상 지연됩니다.
+[cron-job.org](https://cron-job.org)의 무료 크론잡으로 `/health`를 주기적으로 호출해 깨어있는 상태를 유지합니다.
+
+| 항목 | 값 |
+| --- | --- |
+| URL | `https://corea-hoy-be-us.onrender.com/health` |
+| Method | `GET` |
+| 실행 주기 | 10분 |
+| 실행 시간대 | 월~토 07:00 ~ 23:50 KST (일요일 제외) |
+| 타임존 | `Asia/Seoul` |
+| 크론 표현식 | `*/10 7-23 * * 1-6` |
+
+**설정 방법**
+1. cron-job.org 가입 → `Settings`에서 Default timezone을 `Asia/Seoul`로 먼저 지정
+   (이 값은 새로 만드는 잡에만 적용되므로 잡 생성 전에 설정)
+2. `Create cronjob` → Title `Render keep-alive`, URL에 위 주소 입력
+3. Execution schedule에서 프리셋 대신 `Custom` 선택 후 격자를 아래처럼 체크
+
+   | 격자 | 선택 |
+   | --- | --- |
+   | Months / Days of month | 전체 |
+   | Days of week | `Mon`~`Sat` (Sun 해제) |
+   | Hours | `7` ~ `23` |
+   | Minutes | `0, 10, 20, 30, 40, 50` |
+
+4. `Notify me when...`에서 알림 설정
+
+   | 항목 | 설정 |
+   | --- | --- |
+   | execution of the cronjob fails | ON (Notify after `2`) |
+   | execution succeeds after it failed before | ON |
+   | the cronjob will be disabled because of too many failures | ON (기본값 유지) |
+   | the server TLS certificate is about to expire | OFF (Render가 자동 갱신) |
+
+5. 저장 후 `TEST RUN`으로 200 / `{"status":"ok"}` 응답 확인
+
+> **실패 알림을 2회로 둔 이유**
+> 슬립 상태에서 첫 핑이 나가면 콜드 스타트로 20초 이상 걸려 요청 타임아웃에 걸칠 수 있습니다.
+> 1회로 두면 이런 일시적 건으로도 알림이 와서 결국 무시하게 됩니다.
+>
+> **`too many failures` 알림은 끄지 마세요.**
+> cron-job.org는 실패가 누적되면 잡을 자동 비활성화합니다. 이 알림이 없으면 핑이 멈춘 것을 아무도 모르게 되어, GitHub Actions에서 겪은 것과 같은 상황이 반복됩니다.
+
+> **간격을 10분으로 둔 이유**
+> 슬립 기준이 15분이라 12분은 여유가 3분뿐입니다. 핑 간격은 인스턴스 사용 시간에 영향을 주지 않으므로(비용은 "깨어있는 시간"으로만 계산됨) 간격을 줄이는 데 드는 비용이 없습니다.
+
+> **시간대를 제한하는 이유**
+> Render 무료 플랜은 계정당 **750 인스턴스-시간/월** 한도가 있고, 소진하면 남은 기간 동안 서비스가 정지됩니다.
+> 24시간 내내 깨워두면 31일 달 기준 744시간으로 여유가 6시간뿐입니다.
+> 현재 설정(하루 17시간 × 월 약 26일)은 **월 약 445시간**으로 300시간 이상 여유가 있습니다.
+
+> **설정 위치 주의**
+> 이 설정의 실체는 저장소가 아니라 cron-job.org 대시보드에 있습니다. 위 표는 기록용이므로 대시보드에서 값을 바꾸면 이 문서도 함께 수정해야 합니다.
+
+> **GitHub Actions를 쓰지 않는 이유**
+> `schedule` 트리거는 best-effort로 동작해 피크 시간대에 10~60분씩 밀립니다. 슬립 기준(15분)을 넘겨 깨우기에 실패하고, 저장소에 60일간 커밋이 없으면 스케줄이 자동 비활성화됩니다.
+
+<br>
+
 ## 📦 주요 명령어
 
 ```bash
